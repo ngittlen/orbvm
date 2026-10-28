@@ -1,0 +1,84 @@
+{
+  "permissions": {
+    "defaultMode": "auto",
+        "allow": [
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git status:*)",
+      "Bash(git show:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Write(.env)",
+      "Write(.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)",
+      "Read(**/credentials.json)",
+      "Write(**/credentials.json)",
+      "Bash(git add -f:*)",
+      "Bash(git add --force:*)"
+    ]
+  },
+  "model": "opus",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/guard.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "[ -n \"$TMUX_PANE\" ] && tmux set -p -t \"$TMUX_PANE\" @claude_state busy 2>/dev/null || true" }] }
+    ],
+    "PostToolUse": [
+      { "hooks": [{ "type": "command", "command": "[ -n \"$TMUX_PANE\" ] && tmux set -p -t \"$TMUX_PANE\" @claude_state busy 2>/dev/null || true" }] }
+    ],
+    "Notification": [
+      { "hooks": [{ "type": "command", "command": "[ -n \"$TMUX_PANE\" ] && tmux set -p -t \"$TMUX_PANE\" @claude_state waiting 2>/dev/null || true" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "[ -n \"$TMUX_PANE\" ] && tmux set -p -t \"$TMUX_PANE\" @claude_state idle 2>/dev/null || true" }] }
+    ],
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "[ -n \"$TMUX_PANE\" ] && tmux set -p -t \"$TMUX_PANE\" @claude_state idle 2>/dev/null || true" }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "[ -n \"$TMUX_PANE\" ] && tmux set -p -t \"$TMUX_PANE\" -u @claude_state 2>/dev/null || true" }] }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash __HOME__/.claude/statusline-command.sh"
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": false,
+    "github@claude-plugins-official": false,
+    "typescript-lsp@claude-plugins-official": true,
+    "svelte@svelte": true
+  },
+  "extraKnownMarketplaces": {
+    "svelte": {
+      "source": {
+        "source": "github",
+        "repo": "sveltejs/ai-tools"
+      }
+    }
+  },
+  "tui": "fullscreen"
+}

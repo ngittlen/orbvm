@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OrbStack VMs</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1a1d21; --muted:#6b7280; --line:#e5e7eb;
+    --accent:#2f6df6; --accent-ink:#fff;
+    --ok:#16a34a; --okbg:#dcfce7; --warn:#d97706; --warnbg:#fef3c7;
+    --idle:#6b7280; --idlebg:#eceef1; --err:#dc2626; --errbg:#fee2e2;
+    --bar:#eceef1;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#0f1115; --card:#181b20; --ink:#e7e9ec; --muted:#9aa2ad; --line:#272b31;
+    --accent:#4b86ff; --ok:#4ade80; --okbg:#0f2a1a; --warn:#fbbf24; --warnbg:#2a2109;
+    --idle:#9aa2ad; --idlebg:#23262c; --err:#f87171; --errbg:#2a1414; --bar:#23262c;
+    color-scheme:dark;
+  }}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 16px 48px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+  h1{font-size:20px;margin:0;font-weight:650;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;
+       padding:8px 13px;font-size:13.5px;font-weight:550;cursor:pointer;transition:.12s}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .btn.danger{color:var(--err);border-color:transparent;background:transparent;padding:6px 9px}
+  .btn.danger:hover{background:var(--errbg)}
+  .btn:disabled{opacity:.5;cursor:default}
+  .grid{display:grid;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
+  .top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .name{font-size:16px;font-weight:650}
+  .badge{font-size:11px;font-weight:650;padding:3px 9px;border-radius:999px;text-transform:capitalize}
+  .b-running{color:var(--ok);background:var(--okbg)}
+  .b-provisioning{color:var(--warn);background:var(--warnbg)}
+  .b-stopped,.b-paused{color:var(--idle);background:var(--idlebg)}
+  .b-error{color:var(--err);background:var(--errbg)}
+  .spin{display:inline-block;width:9px;height:9px;margin-right:5px;border-radius:50%;
+        border:2px solid currentColor;border-right-color:transparent;animation:sp .8s linear infinite;vertical-align:-1px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .spacer{flex:1}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--muted);font-size:12.5px;margin-bottom:12px}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .chip{cursor:pointer;border:1px solid var(--line);border-radius:7px;padding:2px 7px;color:var(--ink);background:transparent}
+  .chip:hover{border-color:var(--accent)}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:520px){.stats{grid-template-columns:1fr}}
+  .stat .lab{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px}
+  .bar{height:7px;border-radius:999px;background:var(--bar);overflow:hidden}
+  .bar>i{display:block;height:100%;border-radius:999px;background:var(--accent);transition:width .4s}
+  .bar>i.hi{background:var(--warn)}
+  .err{color:var(--err);font-size:12.5px;margin-top:6px;white-space:pre-wrap}
+  .empty{text-align:center;color:var(--muted);padding:48px 0}
+  .dim{color:var(--muted)}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:6px 2px;font-size:12.5px}
+  .btn.ghost:hover{color:var(--ink);border-color:transparent}
+  .logwrap{margin-top:8px}
+  .log{margin:6px 0 0;background:var(--bar);border:1px solid var(--line);border-radius:8px;padding:10px;
+       font:11.5px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;max-height:280px;overflow:auto;
+       white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+  /* modal */
+  .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px}
+  .ov.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:20px;width:100%;max-width:400px}
+  .modal h2{margin:0 0 14px;font-size:16px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+  input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:14px}
+  .row{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+         padding:9px 15px;border-radius:9px;font-size:13px;opacity:0;transition:.2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .live{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>OrbStack VMs</h1>
+      <div class="sub" id="tailnet">tailnet dashboard</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="live"><span class="dot"></span><span id="livelbl">live</span></span>
+      <button class="btn primary" onclick="openNew()">+ New machine</button>
+    </div>
+  </header>
+  <div id="list" class="grid"><div class="empty">Loading…</div></div>
+</div>
+
+<div class="ov" id="ov">
+  <div class="modal">
+    <h2>New machine</h2>
+    <label for="mName">Name</label>
+    <input id="mName" placeholder="devbox" autocomplete="off" spellcheck="false">
+    <div class="hint">Lowercase letters, digits and dashes.</div>
+    <label for="mDistro">Distro</label>
+    <select id="mDistro">
+      <option value="ubuntu:noble">Ubuntu 24.04 (noble) — recommended</option>
+      <option value="ubuntu:jammy">Ubuntu 22.04 (jammy)</option>
+      <option value="debian:bookworm">Debian 12 (bookworm)</option>
+      <option value="fedora:41">Fedora 41</option>
+      <option value="arch">Arch</option>
+    </select>
+    <div class="hint">Provisioning installs Tailscale, Node, git and Claude Code — it takes a few minutes.</div>
+    <div class="row">
+      <button class="btn" onclick="closeNew()">Cancel</button>
+      <button class="btn primary" id="createBtn" onclick="create()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let confirming = null;           // name awaiting a second delete click
+let fast = false;                // poll faster while something is provisioning
+let openLogs = new Set();        // machines whose provisioning log is expanded
+
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+function copy(text,label){navigator.clipboard?.writeText(text).then(()=>toast((label||'Copied')+' copied'),()=>toast('Copy failed'));}
+
+function bar(pct,hi){pct=Math.max(0,Math.min(100,pct||0));return `<div class="bar"><i class="${hi&&pct>80?'hi':''}" style="width:${pct}%"></i></div>`;}
+
+function card(m){
+  const st=m.status||m.state||'unknown';
+  const badge=`<span class="badge b-${st}">${st==='provisioning'?'<span class="spin"></span>':''}${st}</span>`;
+  const host=$('#tailnet').dataset.suffix||'';
+  const addr=m.tailscaleIP?`<button class="chip mono" title="Copy IP" onclick="copy('${m.tailscaleIP}','IP')">${m.tailscaleIP}</button>`:'<span class="dim">no address yet</span>';
+  const ssh=(m.username&&host)?`<button class="chip mono" title="Copy ssh command" onclick="copy('ssh ${m.username}@${m.name}.${host}','ssh command')">ssh ${m.name}.${host}</button>`:'';
+  const running=st==='running';
+  const memPct=(m.memUsedMb&&m.memTotalMb)?(100*m.memUsedMb/m.memTotalMb):0;
+  const cpuFill=(m.cpu!=null&&m.nproc)?(m.cpu/m.nproc):0;   // % of all cores
+  const memGB=m.memTotalMb?(m.memTotalMb/1024).toFixed(0):'';
+  const stats=running?`
+    <div class="stats">
+      <div class="stat">
+        <div class="lab"><span>CPU</span><span>${m.cpu==null?'—':m.cpu+'%'}${m.nproc?` <span class="dim">of ${m.nproc} vCPU</span>`:''}</span></div>
+        ${bar(cpuFill,true)}
+      </div>
+      <div class="stat">
+        <div class="lab"><span>Memory</span><span>${m.memUsedMb==null?'—':`${m.memUsedMb} MB <span class="dim">/ ${memGB} GB shared</span>`}</span></div>
+        ${bar(memPct,true)}
+      </div>
+    </div>`:'';
+  const err=m.error?`<div class="err">${esc(m.error)}</div>`:'';
+  const showLog=(st==='provisioning'||st==='error');
+  const logOpen=openLogs.has(m.name);
+  const logSection=showLog?`
+    <div class="logwrap">
+      <button class="btn ghost" onclick="toggleLog('${m.name}')">${logOpen?'▾ Hide provisioning log':'▸ View provisioning log'}</button>
+      ${logOpen?`<pre class="log" id="log_${m.name}">loading…</pre>`:''}
+    </div>`:'';
+  const delLabel=confirming===m.name?'Confirm delete':'Delete';
+  const delCls=confirming===m.name?'btn danger':'btn danger';
+  return `<div class="card">
+    <div class="top">
+      <span class="name">${esc(m.name)}</span>${badge}
+      <span class="spacer"></span>
+      <button class="${delCls}" onclick="del('${m.name}')">${delLabel}</button>
+    </div>
+    <div class="meta">
+      <span>${addr}</span>
+      ${ssh?`<span>${ssh}</span>`:''}
+      <span>${esc(m.os||m.distro||'')}</span>
+    </div>
+    ${stats}${err}${logSection}
+  </div>`;
+}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function load(){
+  try{
+    const r=await fetch('/api/machines');
+    const ms=await r.json();
+    fast=ms.some(m=>m.status==='provisioning');
+    $('#livelbl').textContent='live · '+new Date().toLocaleTimeString();
+    const list=$('#list');
+    if(!ms.length){list.innerHTML='<div class="empty">No machines yet.<br>Click <b>+ New machine</b> to create one.</div>';return;}
+    list.innerHTML=ms.map(card).join('');
+    openLogs.forEach(n=>fetchLog(n));   // refresh any expanded logs
+  }catch(e){$('#livelbl').textContent='server unreachable';}
+}
+
+function openNew(){$('#ov').classList.add('open');$('#mName').focus();}
+function closeNew(){$('#ov').classList.remove('open');$('#mName').value='';}
+async function create(){
+  const name=$('#mName').value.trim(), distro=$('#mDistro').value;
+  if(!/^[a-z0-9][a-z0-9-]*$/.test(name)){toast('Invalid name');return;}
+  $('#createBtn').disabled=true;
+  try{
+    const r=await fetch('/api/machines',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,distro})});
+    const d=await r.json();
+    if(!r.ok){toast(d.error||'Create failed');}
+    else{toast('Provisioning '+name+'…');closeNew();}
+  }catch(e){toast('Create failed');}
+  $('#createBtn').disabled=false;
+  load();
+}
+function toggleLog(name){
+  if(openLogs.has(name)) openLogs.delete(name); else openLogs.add(name);
+  load();
+}
+async function fetchLog(name){
+  try{
+    const r=await fetch('/api/machines/'+encodeURIComponent(name)+'/log');
+    const d=await r.json();
+    const el=document.getElementById('log_'+name);
+    if(!el) return;
+    const raw=(d.log||'').replace(/\x1b\[[0-9;]*m/g,'');   // strip ANSI colors
+    const atBottom=el.scrollTop+el.clientHeight>=el.scrollHeight-8;
+    el.textContent=raw.trim()?raw:'(no output captured — the dashboard server may have been restarted since this run)';
+    if(atBottom) el.scrollTop=el.scrollHeight;
+  }catch(e){}
+}
+async function del(name){
+  if(confirming!==name){confirming=name;load();clearTimeout(window._ct);window._ct=setTimeout(()=>{confirming=null;load();},4000);return;}
+  confirming=null;
+  try{
+    const r=await fetch('/api/machines/'+encodeURIComponent(name),{method:'DELETE'});
+    const d=await r.json();
+    toast(r.ok?name+' deleted':(d.error||'Delete failed'));
+  }catch(e){toast('Delete failed');}
+  load();
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNew();if(e.key==='Enter'&&$('#ov').classList.contains('open'))create();});
+$('#ov').addEventListener('click',e=>{if(e.target===$('#ov'))closeNew();});
+
+// discover tailnet suffix for ssh/url hints
+fetch('/api/machines').then(r=>r.json()).then(ms=>{
+  const withAddr=ms.find(m=>m.tailscaleIP&&m.name);
+}).catch(()=>{});
+
+// learn the tailnet suffix from the page host if served via tailscale, else leave blank
+(function(){
+  const h=location.hostname;                 // e.g. mymac.tail1234.ts.net
+  const m=h.match(/\.(.+\.ts\.net)$/);
+  if(m){$('#tailnet').dataset.suffix=m[1];$('#tailnet').textContent='on '+m[1];}
+  else {$('#tailnet').textContent='local — expose with tailscale serve for *.ts.net names';}
+})();
+
+load();
+setInterval(()=>load(), 5000);
+setInterval(()=>{if(fast)load();},2000);
+</script>
+</body>
+</html>

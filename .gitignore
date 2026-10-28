@@ -1,0 +1,7 @@
+# Never commit auth keys
+authkey
+*.authkey
+.env
+
+# JetBrains IDE project files
+.idea/
