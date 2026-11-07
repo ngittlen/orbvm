@@ -30,6 +30,7 @@
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
   .btn.danger{color:var(--err);border-color:transparent;background:transparent;padding:6px 9px}
   .btn.danger:hover{background:var(--errbg)}
+  .btn.mini{padding:6px 11px;font-size:12.5px}
   .btn:disabled{opacity:.5;cursor:default}
   .grid{display:grid;gap:12px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:15px 16px}
@@ -123,6 +124,7 @@ const $ = s => document.querySelector(s);
 let confirming = null;           // name awaiting a second delete click
 let fast = false;                // poll faster while something is provisioning
 let openLogs = new Set();        // machines whose provisioning log is expanded
+let powerBusy = new Set();       // machines with a stop/start in flight
 
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
 function copy(text,label){navigator.clipboard?.writeText(text).then(()=>toast((label||'Copied')+' copied'),()=>toast('Copy failed'));}
@@ -160,10 +162,15 @@ function card(m){
     </div>`:'';
   const delLabel=confirming===m.name?'Confirm delete':'Delete';
   const delCls=confirming===m.name?'btn danger':'btn danger';
+  const pBusy=powerBusy.has(m.name);
+  let powerBtn='';
+  if(running) powerBtn=`<button class="btn mini" ${pBusy?'disabled':''} onclick="power('${m.name}','stop')">${pBusy?'Stopping…':'Stop'}</button>`;
+  else if(st==='stopped'||st==='paused') powerBtn=`<button class="btn mini primary" ${pBusy?'disabled':''} onclick="power('${m.name}','start')">${pBusy?'Starting…':'Start'}</button>`;
   return `<div class="card">
     <div class="top">
       <span class="name">${esc(m.name)}</span>${badge}
       <span class="spacer"></span>
+      ${powerBtn}
       <button class="${delCls}" onclick="del('${m.name}')">${delLabel}</button>
     </div>
     <div class="meta">
@@ -219,6 +226,16 @@ async function fetchLog(name){
     el.textContent=raw.trim()?raw:'(no output captured — the dashboard server may have been restarted since this run)';
     if(atBottom) el.scrollTop=el.scrollHeight;
   }catch(e){}
+}
+async function power(name,action){
+  if(powerBusy.has(name))return;
+  powerBusy.add(name);load();
+  try{
+    const r=await fetch('/api/machines/'+encodeURIComponent(name)+'/'+action,{method:'POST'});
+    const d=await r.json();
+    toast(r.ok?(name+(action==='stop'?' stopped':' started')):(d.error||(action+' failed')));
+  }catch(e){toast(action+' failed');}
+  powerBusy.delete(name);load();
 }
 async function del(name){
   if(confirming!==name){confirming=name;load();clearTimeout(window._ct);window._ct=setTimeout(()=>{confirming=null;load();},4000);return;}

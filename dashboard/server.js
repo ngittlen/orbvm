@@ -204,6 +204,16 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, rec ? { status: rec.status, log: rec.log.join(''), error: rec.error } : { status: 'none', log: '' });
     }
 
+    // Power: stop (shut down) or start a machine. A name is always required —
+    // `orb stop` with no argument would stop the entire OrbStack service.
+    const mPower = p.match(/^\/api\/machines\/([a-z0-9-]+)\/(stop|start)$/);
+    if (req.method === 'POST' && mPower) {
+      const [, name, action] = mPower;
+      const r = await run('orb', [action, name], { timeout: 60000 });
+      if (r.code !== 0) return send(res, 500, { error: r.err || r.out || (action + ' failed') });
+      return send(res, 200, { ok: true });
+    }
+
     const mDel = p.match(/^\/api\/machines\/([a-z0-9-]+)$/);
     if (req.method === 'DELETE' && mDel) {
       const name = mDel[1];

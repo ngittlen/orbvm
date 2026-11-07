@@ -45,8 +45,10 @@ orb run -m "$NAME" bash -lc '
   # Official marketplace is not pre-registered on a headless VM; add it explicitly.
   "$CLAUDE" plugin marketplace add anthropics/claude-plugins-official || true
   "$CLAUDE" plugin marketplace add sveltejs/ai-tools || true
+  "$CLAUDE" plugin marketplace add ngittlen/claude-skills || true
   "$CLAUDE" plugin install typescript-lsp@claude-plugins-official || true
   "$CLAUDE" plugin install svelte@svelte || true
+  "$CLAUDE" plugin install nate@claude-skills || true
   echo "   --- plugins ---"
   "$CLAUDE" plugin list || true
 '

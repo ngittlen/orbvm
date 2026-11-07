@@ -70,7 +70,8 @@
     "frontend-design@claude-plugins-official": false,
     "github@claude-plugins-official": false,
     "typescript-lsp@claude-plugins-official": true,
-    "svelte@svelte": true
+    "svelte@svelte": true,
+    "nate@claude-skills": true
   },
   "extraKnownMarketplaces": {
     "svelte": {
@@ -78,6 +79,13 @@
         "source": "github",
         "repo": "sveltejs/ai-tools"
       }
+    },
+    "claude-skills": {
+      "source": {
+        "source": "github",
+        "repo": "ngittlen/claude-skills"
+      },
+      "autoUpdate": true
     }
   },
   "tui": "fullscreen"

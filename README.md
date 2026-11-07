@@ -148,7 +148,8 @@ those two variables to change it, then apply to an existing machine with:
 ## Web dashboard
 
 A small web UI to list machines (name, tailnet address, status, live CPU/memory),
-tear them down, and create new ones — reachable from any device on your tailnet.
+start/stop (shut down) them, tear them down, and create new ones — reachable from
+any device on your tailnet.
 
 ```bash
 ./start-dashboard.sh
@@ -171,8 +172,11 @@ What it shows per machine:
   one core and can exceed 100% across cores; memory is the VM's footprint against
   the shared host RAM.
 
-Create and delete go through the same `create-vm.sh` / `delete-vm.sh` scripts.
-Machine names are validated and passed as arguments (never through a shell).
+Each running machine has a **Stop** button (shut down, reversible — `orb stop`);
+a stopped machine shows **Start** (`orb start`). These keep the VM and its data,
+unlike **Delete**. Create and delete go through the same `create-vm.sh` /
+`delete-vm.sh` scripts. Machine names are validated and passed as arguments
+(never through a shell).
 
 Because it can create and delete VMs, keep the dashboard tailnet-only (that's
 what `tailscale serve`, as opposed to `funnel`, gives you) — don't expose it
