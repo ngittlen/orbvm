@@ -61,6 +61,16 @@ tailscale serve --https=443 off
 ./delete-vm.sh devbox            # logs out of Tailscale, deletes the VM
 ```
 
+### Update Tailscale everywhere
+
+Re-runs Tailscale's official installer inside each VM (idempotent; upgrades the
+package in place and reports the before/after version).
+
+```bash
+./update-tailscale.sh            # every running VM (skips stopped ones)
+./update-tailscale.sh devbox ao-capacitor   # only the named machines
+```
+
 ## Baked-in Claude configuration
 
 Every machine created with `create-vm.sh` is provisioned with a shared Claude
